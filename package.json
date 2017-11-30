@@ -1,5 +1,6 @@
 {
   "name": "r-place-canvas-tool",
+  "productName": "r-place-canvas-tool",
   "version": "0.0.0",
   "private": true,
   "description": "Little tool for rendering various states of the /r/place canvas",
