@@ -17,7 +17,7 @@ npm-debug.log*
 yarn-error.log
 testem.log
 
-
+.idea
 package-lock.json
 
 # ember-try
