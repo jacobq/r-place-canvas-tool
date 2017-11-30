@@ -2,9 +2,9 @@
   "name": "r-place-canvas-tool",
   "version": "0.0.0",
   "private": true,
-  "description": "Small description for r-place-canvas-tool goes here",
+  "description": "Little tool for rendering various states of the /r/place canvas",
   "license": "MIT",
-  "author": "",
+  "author": "Jacob Quant <jacobq@gmail.com>",
   "directories": {
     "doc": "doc",
     "test": "tests"
