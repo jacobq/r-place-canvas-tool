@@ -21,6 +21,7 @@
     "babel-preset-env": "^1.6.1",
     "babel-preset-react": "^6.24.1",
     "broccoli-asset-rev": "^2.4.5",
+    "coffee-script": "1.12.7",
     "devtron": "^1.4.0",
     "electron-forge": "^4.1.5",
     "electron-prebuilt-compile": "1.7.9",
