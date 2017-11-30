@@ -1,5 +1,5 @@
 /* eslint-env node */
-const { app, BrowserWindow, protocol } = require('electron');
+const { app, BrowserWindow, globalShortcut, protocol } = require('electron');
 const { dirname, join, resolve } = require('path');
 const protocolServe = require('electron-protocol-serve');
 
@@ -22,6 +22,8 @@ protocolServe({
 //     autoSubmit: true
 // });
 
+
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
@@ -29,9 +31,15 @@ app.on('window-all-closed', () => {
 });
 
 app.on('ready', () => {
+
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+  });
+
+  mainWindow.setMenu(null);
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+      mainWindow.toggleDevTools();
   });
 
   // If you want to open up dev tools programmatically, call

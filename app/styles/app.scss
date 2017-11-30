@@ -1,0 +1,22 @@
+// Fix for Roboto font path
+$roboto-font-path: '../assets/';
+
+// Materialize styles
+@import "materialize";
+
+.nav-bar nav ul li a {
+    width: 250px;
+}
+
+.r-canvas {
+    canvas {
+        width: 70%;
+        image-rendering: pixelated;
+    }
+    div.controls {
+        width: 25%;
+        display: inline-block;
+        vertical-align: top;
+    }
+}
+

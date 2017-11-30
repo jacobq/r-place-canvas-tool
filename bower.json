@@ -1,0 +1,6 @@
+{
+  "name": "r-place-canvas-tool",
+  "dependencies": {
+    "materialize": "0.97.6"
+  }
+}

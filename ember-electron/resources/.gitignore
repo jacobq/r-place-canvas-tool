@@ -1,0 +1,4 @@
+# Don't revision reddit place uncompressed data
+*.sqlite
+*.sqlite3
+*.sql

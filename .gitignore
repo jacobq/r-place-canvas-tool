@@ -17,6 +17,7 @@ npm-debug.log*
 yarn-error.log
 testem.log
 
+build/
 .idea
 package-lock.json
 
@@ -25,4 +26,5 @@ package-lock.json
 bower.json.ember-try
 package.json.ember-try
 
+# Application build/package output
 electron-out/
