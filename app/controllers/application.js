@@ -17,5 +17,8 @@ export default Controller.extend({
             es_watcher.dispose();
         }
         this._super(...args);
+    },
+    makeSnapShots() {
+        console.log('[DEBUG] application controller: makeSnapShots');
     }
 });

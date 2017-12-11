@@ -81,4 +81,5 @@ export function initDB(options) {
             db.close();
         });
     });
-};
+}
+

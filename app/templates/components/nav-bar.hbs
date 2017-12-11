@@ -1,11 +1,12 @@
+<!-- FIXME: Shouldn't assign fixed IDs since component could have multiple instances and id should/must be unique -->
 <ul id="dropdown1" class="dropdown-content">
     <li><a {{action 'importCSV'}}><i class="material-icons left">storage</i>Import CSV</a></li>
     <li><a {{action 'makeSnapShots'}} disabled={{dbNotPresent}}><i class="material-icons left">photo_camera</i>Generate snapshots</a></li>
     <li><a {{action 'exportImage'}}><i class="material-icons left">image</i>Export image</a></li>
 </ul>
-<nav class="grey lighten-1">
+<nav class="">
     <div class="nav-wrapper">
-        <a href="#!" class="left brand-logo"><img src="images/r-place-logo.png" style="margin-top:10px;"></a>
+        <span class="left">Time</span>
         <ul class="right">
             <li><a class="dropdown-button" href="#!" data-activates="dropdown1">Setup<i class="material-icons right">arrow_drop_down</i></a></li>
         </ul>

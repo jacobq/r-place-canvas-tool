@@ -8,13 +8,42 @@ $roboto-font-path: '../assets/';
     width: 250px;
 }
 
+.nav-bar {
+    nav {
+        @extend .indigo;
+        font-size: 24px;
+        span {
+            margin-left: 10px;
+        }
+    }
+
+    .dropdown-button {
+        @extend .indigo, .darken-2;
+        font-size: 24px;
+    }
+
+    .dropdown-content li > a, .dropdown-content li > span {
+        // color: #26a69a;
+    }
+
+    ul#dropdown1 {
+        li > a {
+            @extend .black-text;
+        }
+    }
+}
+
+
 .r-canvas {
+    width: 100%;
+
     canvas {
-        width: 70%;
+        width: calc(100% - 400px);
         image-rendering: pixelated;
+        border:1px solid #000000;
     }
     div.controls {
-        width: 25%;
+        width: 300px;
         display: inline-block;
         vertical-align: top;
     }

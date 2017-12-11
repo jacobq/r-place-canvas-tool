@@ -131,5 +131,59 @@ export default Component.extend({
                 this.drawPixel({x: row.x - x1, y: row.y - y1, color: row.color});
             });
         }, 3000);
-    })
+    }),
+    actions: {
+        makeSnapShots() {
+            const db = this.get('db');
+
+            // There are 16 million tile placements
+            // so if we're saving every 20k we should expect around 800 snapshots (~5MB each due to format)
+            const interval = 20000;
+            const canvas = this.get('canvas');
+            //const context = this.get('canvasContext');
+
+            // Force full size
+            this.set('x1', 0);
+            this.set('y1', 0);
+            this.set('x2', 1000);
+            this.set('y2', 1000);
+
+            // 1. Clear canvas
+            this.clearCanvas();
+
+            const saveSnapshot = timestamp => {
+                console.log('[DEBUG] creating snapshot at timestamp =', timestamp);
+                const dataURL = canvas.toDataURL('image/png', 1.0);
+                db.run(`INSERT OR REPLACE INTO canvas_snapshots (timestamp, canvas) VALUES (${timestamp}, "${dataURL}")`);
+            };
+
+            // 2. Get all pixels
+            const all_pixels_query = 'SELECT timestamp,x,y,color FROM tiles ORDER BY timestamp ASC;';
+            console.log(`[DEBUG]: makeSnapShots: all_pixels_query = ${all_pixels_query}`);
+            let count = 0;
+            db.serialize(() => {
+                db.serialize(() => {
+                    console.log('[DEBUG]: dropping & recreating canvas_snapshots table');
+                    db.run('DROP TABLE IF EXISTS canvas_snapshots;');
+                    db.run('CREATE TABLE canvas_snapshots (timestamp integer UNIQUE, canvas blob);');
+                });
+
+                db.each(all_pixels_query, (err, row) => {
+                    if (err) {
+                        console.warn(err);
+                        return;
+                    }
+
+                    this.drawPixel({x: row.x, y: row.y, color: row.color});
+
+                    // 3. Every <interval> pixels, get base64 encoded bitmap of canvas
+                    //    and save in canvas-snapshots table with timestamp of last-drawn pixel
+                    if (++count >= interval) {
+                        saveSnapshot(row.timestamp);
+                        count = 0;
+                    }
+                });
+            });
+        }
+    }
 });
