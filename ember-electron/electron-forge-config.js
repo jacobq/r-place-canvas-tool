@@ -12,7 +12,8 @@ module.exports = {
     ]
   },
   "electronPackagerConfig": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "icon": "resources/images/r-place-icon.ico"
   },
   "electronWinstallerConfig": {
     "name": "r_place_canvas_tool"
