@@ -88,7 +88,7 @@ export default Component.extend({
         context.fillRect(x, y, 1, 1);
     },
     renderOnChange: observer('endTime', function() {
-        // TODO: Throttle / drop new
+        // TODO: Throttle / drop new (use ember-concurrency?)
 
         // Note: if going forward in time a small amount we should just go pixel by pixel
 
