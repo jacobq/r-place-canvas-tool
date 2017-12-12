@@ -225,7 +225,7 @@ export function createSnapShots(options) {
         db.serialize(() => {
             console.log('[DEBUG]: dropping & recreating canvas_snapshots table');
             db.run('DROP TABLE IF EXISTS canvas_snapshots;');
-            db.run('CREATE TABLE canvas_snapshots (timestamp integer UNIQUE, canvas blob);');
+            db.run('CREATE TABLE canvas_snapshots (timestamp integer UNIQUE, canvas TEXT);');
         });
 
         db.each(all_pixels_query, (err, row) => {
