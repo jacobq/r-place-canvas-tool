@@ -93,21 +93,17 @@ export function doesTableExist(table, dbFile) {
 
     const promise = new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbFile);
-        let result = true;
         db.serialize(function() {
             // FIXME: SQL injection
-            console.log(`About to run SELECT`);
             db.each(`SELECT x,y FROM ${table} LIMIT 1;`, (err, row) => {
                 if (err) {
                     console.warn(err);
-                    result = false;
-                    resolve(result);
+                    resolve(false);
                     return;
                 }
+                resolve(true);
             });
             db.close();
-            if (result)
-                resolve(result);
         });
     });
     return promise;

@@ -4,12 +4,6 @@ $roboto-font-path: '../assets/';
 // Materialize styles
 @import "materialize";
 
-.nav-bar nav ul li a {
-    width: 250px;
-    &:disabled {
-        color: grey;
-    }
-}
 
 .nav-bar {
     nav {
@@ -31,11 +25,24 @@ $roboto-font-path: '../assets/';
 
     ul#dropdown1 {
         li > a {
-            @extend .black-text;
+            //@extend .black-text;
+            color: black;
         }
     }
 }
 
+
+.nav-bar nav ul li {
+    a {
+        width: 250px;
+    }
+    &:disabled, &.disabled {
+        a {
+            color: grey !important;
+        }
+        pointer-events: none;
+    }
+}
 
 .r-canvas {
     width: 100%;

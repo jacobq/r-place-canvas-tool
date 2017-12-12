@@ -1,7 +1,7 @@
 <!-- FIXME: Shouldn't assign fixed IDs since component could have multiple instances and id should/must be unique -->
 <ul id="dropdown1" class="dropdown-content">
     <li><a {{action 'importCSV'}}><i class="material-icons left">storage</i>Import CSV</a></li>
-    <li><a {{action 'makeSnapShots'}} disabled={{not dbAvailable}}><i class="material-icons left">photo_camera</i>Generate snapshots</a></li>
+    <li class={{if dbAvailable '' 'disabled'}}><a {{action 'makeSnapShots'}}><i class="material-icons left">photo_camera</i>Generate snapshots</a></li>
     <li><a {{action 'exportImage'}}><i class="material-icons left">image</i>Export image</a></li>
 </ul>
 <nav class="">
