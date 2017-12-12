@@ -1,6 +1,6 @@
 import Component from '@ember/component';
 import { inject as service } from '@ember/service';
-import { initDB, addPreviousColorData } from 'r-place-canvas-tool/utils/db-helpers';
+import { initDB, addPreviousColorData, createSnapShots } from 'r-place-canvas-tool/utils/db-helpers';
 
 const fs = requireNode('fs');
 const { remote } = requireNode('electron');
@@ -22,7 +22,7 @@ export default Component.extend({
     },
     actions: {
         importCSV() {
-            //console.log(`[DEBUG]: importCSV`);
+            console.log(`[DEBUG]: importCSV`);
             const openDialogResult = remote.dialog.showOpenDialog({
                 title: "Export current canvas state as...",
                 //defaultPath: ``,
@@ -43,6 +43,7 @@ export default Component.extend({
             });
         },
         exportImage() {
+            console.log(`[DEBUG]: exportImage`);
             const saveDialogResult = dialog.showSaveDialog({
                 title: "Export current canvas state as...",
                 defaultPath: `canvas-${this.get('endTime')}.png`,
@@ -60,8 +61,8 @@ export default Component.extend({
             fs.writeFileSync(saveDialogResult, new Buffer(pngBase64Data, "base64"))
         },
         makeSnapShots() {
-            const f = this.get('makeSnapShots') || (function() {});
-            f();
+            console.log(`[DEBUG]: makeSnapShots`);
+            createSnapShots();
         }
     }
 });

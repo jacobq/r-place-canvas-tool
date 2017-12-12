@@ -1,3 +1,5 @@
+import { colorBytes } from 'r-place-canvas-tool/utils/color';
+
 const fs = requireNode('fs');
 const path = requireNode('path');
 const readline = requireNode('readline');
@@ -34,27 +36,54 @@ export function initDB(options) {
         // ts,user,x_coordinate,y_coordinate,color
         const columns = [];
         const columns_to_extract = {
+            // Time stamp (UTC ms)
+            timestamp: {
+                name: 'timestamp',
+                interpret: x => parseInt(x)
+            },
             ts: {
                 name: 'timestamp',
                 interpret: x => parseInt(x)
             },
+
+            // User (name & hash)
             user: {
                 name: 'userhash'
             },
             userhash: {
                 name: 'userhash'
             },
+            user_hash: {
+                name: 'userhash'
+            },
             username: {
                 name: 'username'
             },
+            user_name: {
+                name: 'username'
+            },
+
+            // X
+            x: {
+                name: 'x',
+                interpret: x => parseInt(x)
+            },
             x_coordinate: {
                 name: 'x',
+                interpret: x => parseInt(x)
+            },
+
+            // Y
+            y: {
+                name: 'y',
                 interpret: x => parseInt(x)
             },
             y_coordinate: {
                 name: 'y',
                 interpret: x => parseInt(x)
             },
+
+            // Color (palette index)
             color: {
                 name: 'color',
                 interpret: x => parseInt(x)
@@ -91,10 +120,10 @@ export function initDB(options) {
                 line.split(',').forEach((x,i) => {
                     record[columns[i].name] = (typeof columns[i].interpret === 'function') ? columns[i].interpret(x) : x;
                 });
-                console.log('[DEBUG] import line:', line, record);
+                //console.log('[DEBUG] import line:', line, record);
                 db.serialize(function() {
                     const sql = `INSERT OR REPLACE INTO tiles (timestamp, userhash, username, x, y, color, prev_color) VALUES (${record.timestamp}, "${record.userhash}", "${record.username}", ${record.x}, ${record.y}, ${record.color}, ${record.prev_color});`;
-                    console.log('[DEBUG] sql =', sql);
+                    //console.log('[DEBUG] sql =', sql);
                     db.run(sql);
                 });
                 lines++;
@@ -121,6 +150,17 @@ export function initDB(options) {
     });
 }
 
+function create2DArray(rows, columns, initValue) {
+    for (let i=0; i < rows; i++) {
+        a[i] = [];
+        for (let j=0; j < columns; j++) {
+            a[i][j] = initValue;
+        }
+    }
+    return a;
+}
+
+
 export function addPreviousColorData(options) {
     options = Object.assign({
         dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
@@ -130,13 +170,7 @@ export function addPreviousColorData(options) {
         const db = new sqlite3.Database(options.dbFile);
         db.serialize(function() {
             // TODO: don't hard-code array dimensions
-            const virtual_canvas = [];
-            for (let i=0; i < 1001; i++) {
-                virtual_canvas[i] = [];
-                for (let j=0; j < 1001; j++) {
-                    virtual_canvas[i][j] = 0;   // initially everything is white
-                }
-            }
+            const virtual_canvas = create2DArray(1001,1001,0);
             db.each('SELECT rowid,x,y,color FROM tiles ORDER BY timestamp ASC;', (err, row) => {
                 if (err) {
                     console.warn(err);
@@ -160,6 +194,50 @@ export function createSnapShots(options) {
         interval: 10000,
         dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
     }, options);
+    // FIXME: Don't hard-code dimensions
+    const rows = 1001;
+    const cols = 1001;
+    const virtual_canvas = new Uint8ClampedArray(4*rows*cols);  // inits to 0
+
+    const db = new sqlite3.Database(options.dbFile);
+    const saveSnapshot = timestamp => {
+        console.log('[DEBUG] creating snapshot at timestamp =', timestamp);
+        const b64 = Buffer.from(virtual_canvas).toString('base64');
+        db.run(`INSERT OR REPLACE INTO canvas_snapshots (timestamp, canvas) VALUES (${timestamp}, "${b64}")`);
+    };
+
+    // 2. Get all pixels
+    const all_pixels_query = 'SELECT timestamp,x,y,color FROM tiles ORDER BY timestamp ASC;';
+    console.log(`[DEBUG]: makeSnapShots: all_pixels_query = ${all_pixels_query}`);
+    let count = 0;
+    db.serialize(() => {
+        db.serialize(() => {
+            console.log('[DEBUG]: dropping & recreating canvas_snapshots table');
+            db.run('DROP TABLE IF EXISTS canvas_snapshots;');
+            db.run('CREATE TABLE canvas_snapshots (timestamp integer UNIQUE, canvas blob);');
+        });
+
+        db.each(all_pixels_query, (err, row) => {
+            if (err) {
+                console.warn(err);
+                return;
+            }
+
+            const startIndex = 4*((rows * row.x) + row.y);
+            colorBytes[row.color].forEach((x,i) => {
+                virtual_canvas[startIndex + i] = x;
+            });
+
+            // 3. Every <interval> pixels, get base64 encoded bitmap of canvas
+            //    and save in canvas-snapshots table with timestamp of last-drawn pixel
+            if (++count >= options.interval) {
+                saveSnapshot(row.timestamp);
+                count = 0;
+            }
+        });
+    }, () => {
+        db.close();
+    });
 
 }
 

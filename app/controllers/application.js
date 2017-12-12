@@ -2,9 +2,10 @@ import Controller from '@ember/controller';
 import { computed, observer } from '@ember/object';
 //import { later } from '@ember/runloop';
 
-const { remote } = requireNode('electron');
 import { doesTableExist } from 'r-place-canvas-tool/utils/db-helpers';
+import { colorBytes } from 'r-place-canvas-tool/utils/color';
 
+const { remote } = requireNode('electron');
 
 export default Controller.extend({
     init(...args) {
@@ -73,11 +74,6 @@ export default Controller.extend({
             }, 3000);
         }),
     */
-    actionHandlers: {
-        makeSnapShots() {
-            console.log('[DEBUG] application controller: actionHandlers.makeSnapShots');
-        }
-    },
     canvasData: observer('endTime', function() {
         const endTime = this.get('endTime');
     })
