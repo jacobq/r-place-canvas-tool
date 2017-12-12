@@ -83,3 +83,32 @@ export function initDB(options) {
     });
 }
 
+export function doesTableExist(table, dbFile) {
+    dbFile = dbFile || path.resolve(userDataPath, 'reddit-place.sqlite3');
+    if (!fs.existsSync(dbFile)) {
+        const message = `The DB file specified does not exist: ${dbFile}`;
+        console.warn(message);
+        return Promise.resolve(false);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(dbFile);
+        let result = true;
+        db.serialize(function() {
+            // FIXME: SQL injection
+            console.log(`About to run SELECT`);
+            db.each(`SELECT x,y FROM ${table} LIMIT 1;`, (err, row) => {
+                if (err) {
+                    console.warn(err);
+                    result = false;
+                    resolve(result);
+                    return;
+                }
+            });
+            db.close();
+            if (result)
+                resolve(result);
+        });
+    });
+    return promise;
+}

@@ -6,6 +6,9 @@ $roboto-font-path: '../assets/';
 
 .nav-bar nav ul li a {
     width: 250px;
+    &:disabled {
+        color: grey;
+    }
 }
 
 .nav-bar {
