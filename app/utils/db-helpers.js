@@ -10,7 +10,11 @@ const sqlite3 = requireNode('sqlite3').verbose();
 const resourcesPath = path.resolve(__dirname, '..', 'ember-electron', 'resources');
 const userDataPath = remote.app.getPath('userData');
 
+export const defaultDbFile = path.resolve(userDataPath, 'reddit-place.sqlite3');
+
 // This function takes tile data (CSV) and creates an SQLite DB table with a row for each placement
+// FIXME: BROKEN at the moment
+// This seems to run way too slow. Perhaps we could group some INSERTs or deserialize them?
 export function initDB(options) {
     options = Object.assign({
         tilesCSV: path.resolve(resourcesPath, 'tile-placement.csv'),
@@ -91,7 +95,7 @@ export function initDB(options) {
         };
         // first line
         rl.once('line', line => {
-            console.log('[DEBUG] first line ->', line);
+            console.log(`[${new Date()}] [DEBUG] first line -> ${line}`);
             line.split(',').forEach((c, i) => {
                 c = c.replace(/\s*/, "");
                 const col = columns_to_extract[c];
@@ -99,8 +103,8 @@ export function initDB(options) {
                     columns[i] = col;
             });
             db.serialize(function() {
-                db.run("DROP TABLE IF EXISTS tiles;");
-                db.run("CREATE TABLE tiles (timestamp INTEGER, userhash TEXT, username, x INTEGER, y INTEGER, color INTEGER, prev_color INTEGER);");
+                //db.run("DROP TABLE IF EXISTS tiles;");
+                db.run("CREATE TABLE IF NOT EXISTS tiles (timestamp INTEGER PRIMARY KEY, userhash TEXT, username, x INTEGER, y INTEGER, color INTEGER, prev_color INTEGER);");
             });
             lines++;
             rl.on('line', line => {
@@ -121,12 +125,14 @@ export function initDB(options) {
                     record[columns[i].name] = (typeof columns[i].interpret === 'function') ? columns[i].interpret(x) : x;
                 });
                 //console.log('[DEBUG] import line:', line, record);
-                db.serialize(function() {
-                    const sql = `INSERT OR REPLACE INTO tiles (timestamp, userhash, username, x, y, color, prev_color) VALUES (${record.timestamp}, "${record.userhash}", "${record.username}", ${record.x}, ${record.y}, ${record.color}, ${record.prev_color});`;
-                    //console.log('[DEBUG] sql =', sql);
-                    db.run(sql);
-                });
+                const sql = `INSERT OR REPLACE INTO tiles (timestamp, userhash, username, x, y, color, prev_color) VALUES (${record.timestamp}, "${record.userhash}", "${record.username}", ${record.x}, ${record.y}, ${record.color}, ${record.prev_color});`;
+                //console.log('[DEBUG] sql =', sql);
+                // FIXME: If this isn't serialized the table may not be created yet
+                // if it is serialized then we end up going slow here for many more rows than needed
+                db.run(sql);
                 lines++;
+                if (lines % 1000 === 0)
+                    console.log(`[${new Date()}] [DEBUG] processed ${lines} lines`);
             });
         })
 
@@ -163,7 +169,7 @@ function create2DArray(rows, columns, initValue) {
 
 export function addPreviousColorData(options) {
     options = Object.assign({
-        dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
+        dbFile: defaultDbFile,
     }, options);
 
     return new Promise((resolve, reject) => {
@@ -171,6 +177,7 @@ export function addPreviousColorData(options) {
         db.serialize(function() {
             // TODO: don't hard-code array dimensions
             const virtual_canvas = create2DArray(1001,1001,0);
+            let count = 0;
             db.each('SELECT rowid,x,y,color FROM tiles ORDER BY timestamp ASC;', (err, row) => {
                 if (err) {
                     console.warn(err);
@@ -179,6 +186,10 @@ export function addPreviousColorData(options) {
                 }
                 db.run(`UPDATE tiles SET prev_color = ${virtual_canvas[row.x][row.y]} WHERE rowid = ${row.rowid};`)
                 virtual_canvas[row.x][row.y] = row.color;
+                count++;
+                if (count % 1000 === 0) {
+                    console.log(`[${new Date()}] addPreviousColorData: count = ${count}`);
+                }
             }, () => {
                 console.log(virtual_canvas);
                 db.close();
@@ -192,7 +203,7 @@ export function addPreviousColorData(options) {
 export function createSnapShots(options) {
     options = Object.assign({
         interval: 10000,
-        dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
+        dbFile: defaultDbFile,
     }, options);
     // FIXME: Don't hard-code dimensions
     const rows = 1001;
@@ -242,7 +253,7 @@ export function createSnapShots(options) {
 }
 
 export function doesTableExist(table, dbFile) {
-    dbFile = dbFile || path.resolve(userDataPath, 'reddit-place.sqlite3');
+    dbFile = dbFile || defaultDbFile;
     if (!fs.existsSync(dbFile)) {
         const message = `The DB file specified does not exist: ${dbFile}`;
         console.warn(message);
