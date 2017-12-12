@@ -75,7 +75,6 @@ export default Component.extend({
     */
     drawSnapShot(imageData, offset) {
         const context = this.get('canvasContext');
-
         context.putImageData(imageData,offset.x,offset.y);
     },
     drawPixel({x, y, color}) {
@@ -126,12 +125,18 @@ export default Component.extend({
             let beforeDistance = (before.snapshotTime === -1) ? Infinity : targetTime - before.snapshotTime;
             let walkDistance = targetTime - lastRenderedTime;
 
-            if (beforeDistance !== -1 && typeof before.snapshotData === "string" && (beforeDistance < walkDistance) ||  walkDistance < 0) {
+            if (before.snapshotTime !== -1 && (typeof before.snapshotData === "string") && (beforeDistance < walkDistance) ||  walkDistance < 0) {
                 // before snapshot is closest
                 console.log(`[DEBUG] using snapshot from ${before.snapshotTime}`);
-
-                let buffer = Buffer.from(before.snapshotData, 'base64');
-                this.drawSnapShot(new ImageData(new Uint8ClampedArray(buffer), 1001, 1001), {x: x1, y: y1});
+                try {
+                    let buffer = Buffer.from(before.snapshotData, 'base64');
+                    this.drawSnapShot(new ImageData(new Uint8ClampedArray(buffer), 1001, 1001), {x: x1, y: y1});
+                }
+                catch (e) {
+                    this.set('_lastRenderedTime', 0);
+                    console.warn(e, typeof before.snapshotData);
+                    return; // 'snapshot error'
+                }
                 //buffer.copy(canvasData);
                 //new ImageData(buffer, 1001, 1001)
 
