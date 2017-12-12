@@ -1,6 +1,6 @@
 import Component from '@ember/component';
 import { inject as service } from '@ember/service';
-import { initDB } from 'r-place-canvas-tool/utils/db-helpers';
+import { initDB, addPreviousColorData } from 'r-place-canvas-tool/utils/db-helpers';
 
 const fs = requireNode('fs');
 const { remote } = requireNode('electron');
@@ -38,6 +38,8 @@ export default Component.extend({
 
             initDB({
                 tilesCSV: openDialogResult[0]
+            }).then(() => {
+                return addPreviousColorData();
             });
         },
         exportImage() {

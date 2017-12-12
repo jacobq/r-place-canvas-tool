@@ -112,9 +112,10 @@ export function initDB(options) {
                     }
                     const message = `[${new Date()}] counted ${row.count} rows`;
                     console.log(message);
+                }, () => {
                     resolve();
+                    db.close();
                 });
-                db.close();
             });
         });
     });
@@ -122,6 +123,41 @@ export function initDB(options) {
 
 export function addPreviousColorData(options) {
     options = Object.assign({
+        dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
+    }, options);
+
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(options.dbFile);
+        db.serialize(function() {
+            // TODO: don't hard-code array dimensions
+            const virtual_canvas = [];
+            for (let i=0; i < 1001; i++) {
+                virtual_canvas[i] = [];
+                for (let j=0; j < 1001; j++) {
+                    virtual_canvas[i][j] = 0;   // initially everything is white
+                }
+            }
+            db.each('SELECT rowid,x,y,color FROM tiles ORDER BY timestamp ASC;', (err, row) => {
+                if (err) {
+                    console.warn(err);
+                    reject(err);
+                    return;
+                }
+                db.run(`UPDATE tiles SET prev_color = ${virtual_canvas[row.x][row.y]} WHERE rowid = ${row.rowid};`)
+                virtual_canvas[row.x][row.y] = row.color;
+            }, () => {
+                console.log(virtual_canvas);
+                db.close();
+                resolve();
+            });
+        });
+
+    });
+}
+
+export function createSnapShots(options) {
+    options = Object.assign({
+        interval: 10000,
         dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
     }, options);
 
@@ -145,6 +181,7 @@ export function doesTableExist(table, dbFile) {
                     resolve(false);
                     return;
                 }
+            }, () => {
                 resolve(true);
             });
             db.close();
