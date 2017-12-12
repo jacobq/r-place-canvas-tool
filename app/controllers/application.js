@@ -1,5 +1,7 @@
 import Controller from '@ember/controller';
 import { computed, observer } from '@ember/object';
+//import { later } from '@ember/runloop';
+
 const { remote } = requireNode('electron');
 import { doesTableExist } from 'r-place-canvas-tool/utils/db-helpers';
 
@@ -8,12 +10,18 @@ export default Controller.extend({
     init(...args) {
         this._super(...args);
         //this.set('', new Uint8ClampedArray());
-        doesTableExist('tiles').then(dbAvailable => {
-            this.set('dbAvailable', dbAvailable);
-        })
+        // FIXME: Shouldn't be using setInteval / polling for DB change
+        const checkDB = () => {
+            doesTableExist('tiles').then(dbAvailable => {
+                this.set('dbAvailable', dbAvailable);
+            });
+        };
+        checkDB();
+        this.set('_checkDBInterval', setInterval(checkDB, 5000));
     },
     destroy(...args) {
         // ...
+        clearInterval(this.get('_checkDBInterval'));
         this._super(...args);
     },
     dbAvailable: null,

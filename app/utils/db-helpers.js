@@ -16,71 +16,115 @@ export function initDB(options) {
     }, options);
     console.log(`[DEBUG]: initDB options = ${JSON.stringify(options)}`);
 
-    if (!fs.existsSync(options.tilesCSV)) {
-        const message = `The CSV file provided does not exist: ${options.tilesCSV}`;
-        console.warn(message);
-        return {
-            type: 'error',
-            message
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(options.tilesCSV)) {
+            const message = `The CSV file provided does not exist: ${options.tilesCSV}`;
+            console.warn(message);
+            reject(message);
+            return;
+        }
+
+        const readStream = fs.createReadStream(options.tilesCSV);
+        const rl = readline.createInterface({
+            input: readStream
+        });
+        const db = new sqlite3.Database(options.dbFile);
+
+        let lines = 0;
+        // ts,user,x_coordinate,y_coordinate,color
+        const columns = [];
+        const columns_to_extract = {
+            ts: {
+                name: 'timestamp',
+                interpret: x => parseInt(x)
+            },
+            user: {
+                name: 'userhash'
+            },
+            userhash: {
+                name: 'userhash'
+            },
+            username: {
+                name: 'username'
+            },
+            x_coordinate: {
+                name: 'x',
+                interpret: x => parseInt(x)
+            },
+            y_coordinate: {
+                name: 'y',
+                interpret: x => parseInt(x)
+            },
+            color: {
+                name: 'color',
+                interpret: x => parseInt(x)
+            }
         };
-    }
-
-    console.log(`[DEBUG]: [${new Date()}] Creating SQLite3 database using SQL dump`);
-    const readStream = fs.createReadStream(options.tilesCSV);
-    const rl = readline.createInterface({
-        input: readStream,
-        //output: process.stdout
-    });
-    const db = new sqlite3.Database(options.pathToDB);
-
-    let lines = 0;
-    const columns = [];
-    const columns_to_extract = {
-        ts: 'timestamp',
-        x_coordinate: 'x',
-        y_coordinate: 'y',
-        color: 'color'
-    };
-    rl.on('line', (line) => {
-        //console.log(`[DEBUG]: read line = ${line}`);
-        if (lines === 0) {
+        // first line
+        rl.once('line', line => {
+            console.log('[DEBUG] first line ->', line);
             line.split(',').forEach((c, i) => {
                 c = c.replace(/\s*/, "");
-                const name = columns_to_extract[c];
-                if (name)
-                    columns[i] = name;
+                const col = columns_to_extract[c];
+                if (col)
+                    columns[i] = col;
             });
             db.serialize(function() {
                 db.run("DROP TABLE IF EXISTS tiles;");
-                db.run("CREATE TABLE tiles (timestamp INTEGER, x INTEGER, y INTEGER, color INTEGER);");
+                db.run("CREATE TABLE tiles (timestamp INTEGER, userhash TEXT, username, x INTEGER, y INTEGER, color INTEGER, prev_color INTEGER);");
             });
-        }
-        else {
-            const record = {};
-            line.split(',').forEach((x,i) => {
-                record[columns[i]] = parseInt(x);
-            });
-
-            db.serialize(function() {
-                db.run(`INSERT INTO tiles VALUES (${record.timestamp}, ${record.x}, ${record.y}, ${record.color});`);
-            });
-        }
-        lines++;
-    });
-
-    rl.on('close', () => {
-        console.log(`[DEBUG] [${new Date()}] finished reading CSV data (${lines} lines read, including header row)`);
-        db.serialize(function() {
-            db.each('SELECT count(*) as count FROM tiles;', (err, row) => {
-                if (err) {
-                    console.warn(err);
+            lines++;
+            rl.on('line', line => {
+                if (line.length < 5) {
+                    console.warn('[DEBUG] Skipping blank line', line);
                     return;
                 }
-                console.log(`[DEBUG] [${new Date()}] counted ${row.count} rows`);
+                const record = {
+                    timestamp: null,
+                    userhash: null,
+                    username: null,
+                    x: null,
+                    y: null,
+                    color: null,
+                    prev_color: null
+                };
+                line.split(',').forEach((x,i) => {
+                    record[columns[i].name] = (typeof columns[i].interpret === 'function') ? columns[i].interpret(x) : x;
+                });
+                console.log('[DEBUG] import line:', line, record);
+                db.serialize(function() {
+                    const sql = `INSERT OR REPLACE INTO tiles (timestamp, userhash, username, x, y, color, prev_color) VALUES (${record.timestamp}, "${record.userhash}", "${record.username}", ${record.x}, ${record.y}, ${record.color}, ${record.prev_color});`;
+                    console.log('[DEBUG] sql =', sql);
+                    db.run(sql);
+                });
+                lines++;
             });
-            db.close();
+        })
+
+        rl.on('close', () => {
+            console.log(`[DEBUG] [${new Date()}] finished reading CSV data (${lines} lines read, including header row)`);
+            db.serialize(function() {
+                db.each('SELECT count(*) as count FROM tiles;', (err, row) => {
+                    if (err) {
+                        console.warn(err);
+                        reject(err);
+                        return;
+                    }
+                    const message = `[${new Date()}] counted ${row.count} rows`;
+                    console.log(message);
+                    resolve();
+                });
+                db.close();
+            });
         });
     });
+}
+
+export function addPreviousColorData(options) {
+    options = Object.assign({
+        dbFile: path.resolve(userDataPath, 'reddit-place.sqlite3'),
+    }, options);
+
 }
 
 export function doesTableExist(table, dbFile) {
