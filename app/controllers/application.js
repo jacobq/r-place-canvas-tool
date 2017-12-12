@@ -2,10 +2,12 @@ import Controller from '@ember/controller';
 import { computed, observer } from '@ember/object';
 //import { later } from '@ember/runloop';
 
+const { remote } = requireNode('electron');
+const sqlite3 = requireNode('sqlite3').verbose();
+
 import { doesTableExist, defaultDbFile } from 'r-place-canvas-tool/utils/db-helpers';
 import { colorBytes } from 'r-place-canvas-tool/utils/color';
 
-const { remote } = requireNode('electron');
 
 const data = new Uint8ClampedArray(4*1001*1001);
 
@@ -40,6 +42,7 @@ export default Controller.extend({
     dbAvailable: true,
     endTime: 1490979300, // track in ms?
     lastRenderedTime: 0,
+/*
     renderOnChange: observer('endTime', function() {
         // TODO: Throttle / drop new (use ember-concurrency?)
         const db = this.get('db');
@@ -69,6 +72,7 @@ export default Controller.extend({
         //     max(timestamp) <= targetTime
         //     min(timestamp) >= targetTime
         // 3. Choose smallest delta
+*/
 /*
         const snapshotBeforePromise = new Promise((resolve, reject) => {
             let snapshotTime = -1;
@@ -135,8 +139,6 @@ export default Controller.extend({
             else {
                 // walking is closest
             }
-*/
-/*
             const pixel_query = `SELECT x,y,color FROM tiles WHERE x >= ${x1} AND x <= ${x2} AND y >= ${y1} AND y <= ${y2} AND timestamp >= ${snapshotTime} AND timestamp <= ${endTime} ORDER BY timestamp ASC;`;
             console.log(`[DEBUG]: pixel_query = ${pixel_query}`);
             db.each(pixel_query, (err, row) => {
@@ -146,11 +148,13 @@ export default Controller.extend({
                 }
                 this.drawPixel({x: row.x - x1, y: row.y - y1, color: row.color});
             });
-*/
         });
+*/
 
-    }),
+//    }),
+/*
     canvasData: observer('endTime', function() {
         const endTime = this.get('endTime');
     })
+*/
 });
