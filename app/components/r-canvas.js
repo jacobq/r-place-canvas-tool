@@ -75,6 +75,7 @@ export default Component.extend({
     */
     drawSnapShot(imageData, offset) {
         const context = this.get('canvasContext');
+
         context.putImageData(imageData,offset.x,offset.y);
     },
     drawPixel({x, y, color}) {
@@ -125,9 +126,10 @@ export default Component.extend({
             let beforeDistance = (before.snapshotTime === -1) ? Infinity : targetTime - before.snapshotTime;
             let walkDistance = targetTime - lastRenderedTime;
 
-            if (beforeDistance !== -1 && (beforeDistance < walkDistance) ||  walkDistance < 0) {
+            if (beforeDistance !== -1 && typeof before.snapshotData === "string" && (beforeDistance < walkDistance) ||  walkDistance < 0) {
                 // before snapshot is closest
                 console.log(`[DEBUG] using snapshot from ${before.snapshotTime}`);
+
                 let buffer = Buffer.from(before.snapshotData, 'base64');
                 this.drawSnapShot(new ImageData(new Uint8ClampedArray(buffer), 1001, 1001), {x: x1, y: y1});
                 //buffer.copy(canvasData);
@@ -147,21 +149,25 @@ export default Component.extend({
             }
             else {
                 // walking is closest
-                if (walkDistance < 0)
+                if (walkDistance < 0) {
+                    this.set('_lastRenderedTime', 0);
                     this.clearCanvas();
-            }
-            const pixel_query = `SELECT x,y,color FROM tiles WHERE x >= ${x1} AND x <= ${x2} AND y >= ${y1} AND y <= ${y2}` +
-                                ` AND timestamp >= ${before.snapshotTime} AND timestamp <= ${targetTime} ORDER BY timestamp ASC;`;
-            console.log(`[DEBUG]: pixel_query = ${pixel_query}`);
-            db.each(pixel_query, (err, row) => {
-                if (err) {
-                    console.warn(err);
-                    return;
                 }
-                this.drawPixel({x: row.x - x1, y: row.y - y1, color: row.color});
-            }, () => {
-                this.set('_lastRenderedTime', targetTime);
-            });
+
+                const lastRenderedTime = this.set('_lastRenderedTime', 0);
+                const pixel_query = `SELECT x,y,color FROM tiles WHERE x >= ${x1} AND x <= ${x2} AND y >= ${y1} AND y <= ${y2}` +
+                    ` AND timestamp >= ${lastRenderedTime} AND timestamp <= ${targetTime} ORDER BY timestamp ASC;`;
+                console.log(`[DEBUG]: pixel_query = ${pixel_query}`);
+                db.each(pixel_query, (err, row) => {
+                    if (err) {
+                        console.warn(err);
+                        return;
+                    }
+                    this.drawPixel({x: row.x - x1, y: row.y - y1, color: row.color});
+                }, () => {
+                    this.set('_lastRenderedTime', targetTime);
+                });
+            }
         });
     }),
     actions: {

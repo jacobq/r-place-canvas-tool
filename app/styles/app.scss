@@ -51,6 +51,7 @@ $roboto-font-path: '../assets/';
         width: calc(100% - 400px);
         image-rendering: pixelated;
         border:1px solid #000000;
+        transform: scale(-1,1) rotate(90deg); // FIXME: Hack to work-around x/y swap bug
     }
     div.controls {
         width: 300px;
